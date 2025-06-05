@@ -57,6 +57,7 @@ The following environment variables are required:
 
 - `NEWS_API_KEY`: API key for NewsAPI
 - `ALPHA_VANTAGE_API_KEY`: API key for Alpha Vantage
+- `FMP_API_KEY`: API key for FinancialModelingPrep (used for stock search)
 
 ## Contributing
 

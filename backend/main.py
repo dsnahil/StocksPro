@@ -30,7 +30,12 @@ newsapi = NewsApiClient(api_key=os.getenv('NEWS_API_KEY'))
 # Get FMP API key from environment variables
 FMP_API_KEY = os.getenv('FMP_API_KEY')
 if not FMP_API_KEY:
-    raise ValueError("FMP_API_KEY environment variable is not set")
+    # Instead of failing at startup, log a warning so the API can still run
+    # without the optional stock search functionality.
+    print(
+        "Warning: FMP_API_KEY environment variable is not set. "
+        "The /search_stocks endpoint will be disabled."
+    )
 
 class StockAnalysisRequest(BaseModel):
     ticker: str
@@ -84,9 +89,17 @@ def get_news_sentiment(ticker):
 
 @app.get("/search_stocks", response_model=List[StockSuggestion])
 async def search_stocks(query: str = Query(..., min_length=2)):
+    if not FMP_API_KEY:
+        raise HTTPException(
+            status_code=503,
+            detail="Stock search is unavailable because FMP_API_KEY is not configured."
+        )
     try:
         # Use FinancialModelingPrep's search API
-        fmp_search_url = f"https://financialmodelingprep.com/api/v3/search?query={query}&limit=10&apikey={FMP_API_KEY}"
+        fmp_search_url = (
+            "https://financialmodelingprep.com/api/v3/search"
+            f"?query={query}&limit=10&apikey={FMP_API_KEY}"
+        )
         response = requests.get(fmp_search_url)
         response.raise_for_status()
         
