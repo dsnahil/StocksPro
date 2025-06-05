@@ -1,12 +1,12 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from typing import Optional
-import yfinance as yf
+from typing import Optional, List
+# import yfinance as yf # We will not directly use yfinance for search anymore
 import pandas as pd
 import numpy as np
 from datetime import datetime, timedelta
-import requests
+import requests # Import requests library
 from newsapi import NewsApiClient
 import os
 from dotenv import load_dotenv
@@ -27,6 +27,11 @@ app.add_middleware(
 # Initialize NewsAPI client
 newsapi = NewsApiClient(api_key=os.getenv('NEWS_API_KEY'))
 
+# Get FMP API key from environment variables
+FMP_API_KEY = os.getenv('FMP_API_KEY')
+if not FMP_API_KEY:
+    raise ValueError("FMP_API_KEY environment variable is not set")
+
 class StockAnalysisRequest(BaseModel):
     ticker: str
     shares: int
@@ -41,6 +46,14 @@ class StockAnalysisResponse(BaseModel):
     rationale: str
     disclaimer: str
     data_timestamp: str
+
+class StockSuggestion(BaseModel):
+    symbol: str
+    name: str
+    exchange: str
+
+# Re-import yfinance for other functionalities
+import yfinance as yf
 
 def calculate_technical_indicators(df):
     # Calculate RSI
@@ -69,10 +82,38 @@ def get_news_sentiment(ticker):
         print(f"Error fetching news: {e}")
         return []
 
+@app.get("/search_stocks", response_model=List[StockSuggestion])
+async def search_stocks(query: str = Query(..., min_length=2)):
+    try:
+        # Use FinancialModelingPrep's search API
+        fmp_search_url = f"https://financialmodelingprep.com/api/v3/search?query={query}&limit=10&apikey={FMP_API_KEY}"
+        response = requests.get(fmp_search_url)
+        response.raise_for_status()
+        
+        search_results = response.json()
+        
+        suggestions = []
+        if search_results:
+            for result in search_results:
+                suggestions.append(StockSuggestion(
+                    symbol=result.get('symbol', 'N/A'),
+                    name=result.get('name', 'N/A'),
+                    exchange=result.get('exchangeShortName', 'N/A')
+                ))
+
+        return suggestions
+
+    except requests.exceptions.RequestException as e:
+        print(f"Error calling FMP search API: {e}")
+        raise HTTPException(status_code=500, detail=f"Error searching for stocks: Could not connect to stock data source.")
+    except Exception as e:
+        print(f"Error processing FMP search response: {e}")
+        raise HTTPException(status_code=500, detail=f"Error searching for stocks: Could not process search results.")
+
 @app.post("/analyze", response_model=StockAnalysisResponse)
 async def analyze_stock(request: StockAnalysisRequest):
     try:
-        # Fetch stock data
+        # Fetch stock data using yfinance (this part remains the same)
         ticker_symbol = request.ticker
         if not ticker_symbol.endswith(".NS"):
             ticker_symbol += ".NS"
@@ -149,4 +190,4 @@ async def analyze_stock(request: StockAnalysisRequest):
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000) 
+    uvicorn.run(app, host="0.0.0.0", port=8000)

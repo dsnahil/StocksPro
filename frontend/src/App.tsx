@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Container,
   Paper,
@@ -15,6 +15,8 @@ import {
   Alert,
   Fade,
   Grow,
+  Autocomplete,
+  CircularProgress as MuiCircularProgress,
 } from '@mui/material';
 import axios from 'axios';
 
@@ -27,8 +29,17 @@ interface AnalysisResponse {
   data_timestamp: string;
 }
 
+interface StockSuggestion {
+  symbol: string;
+  name: string;
+  exchange: string;
+}
+
 function App() {
   const [ticker, setTicker] = useState('');
+  const [stockInput, setStockInput] = useState('');
+  const [stockSuggestions, setStockSuggestions] = useState<StockSuggestion[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
   const [shares, setShares] = useState('');
   const [averagePrice, setAveragePrice] = useState('');
   const [positionType, setPositionType] = useState('profit');
@@ -36,6 +47,45 @@ function App() {
   const [analysis, setAnalysis] = useState<AnalysisResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  useEffect(() => {
+    let isMounted = true;
+    const searchStocks = async () => {
+      if (stockInput.length >= 2) {
+        setIsSearching(true);
+        setError(''); // Clear previous errors on new search
+        try {
+          // Using the new backend endpoint for stock search
+          const response = await axios.get(`http://localhost:8000/search_stocks?query=${stockInput}`);
+          
+          if (isMounted && response.data) {
+            // The backend should return a list of StockSuggestion objects
+            setStockSuggestions(response.data);
+          }
+        } catch (err: any) {
+          console.error('Error fetching stock suggestions from backend:', err);
+          if (isMounted) {
+            setStockSuggestions([]);
+            // Display a more user-friendly error message
+            setError(err.response?.data?.detail || 'Error searching for stocks. Please try again.');
+          }
+        } finally {
+          if (isMounted) {
+            setIsSearching(false);
+          }
+        }
+      } else {
+        setStockSuggestions([]);
+        setError(''); // Clear error when input is less than 2 chars
+      }
+    };
+
+    const debounceTimer = setTimeout(searchStocks, 300);
+    return () => {
+      clearTimeout(debounceTimer);
+      isMounted = false;
+    };
+  }, [stockInput]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -111,19 +161,69 @@ function App() {
           }}>
             <form onSubmit={handleSubmit}>
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                <TextField
-                  label="Stock Ticker"
-                  value={ticker}
-                  onChange={(e) => setTicker(e.target.value)}
-                  required
-                  fullWidth
-                  sx={{
-                    '& .MuiOutlinedInput-root': {
-                      '&:hover fieldset': {
-                        borderColor: '#2196F3',
-                      },
-                    },
+                <Autocomplete
+                  freeSolo
+                  options={stockSuggestions}
+                  getOptionLabel={(option) => 
+                    typeof option === 'string' 
+                      ? option 
+                      : `${option.symbol} - ${option.name} (${option.exchange})`
+                  }
+                  inputValue={stockInput}
+                  onInputChange={(_, newValue) => {
+                    setStockInput(newValue);
+                    setError(''); // Clear any previous errors
                   }}
+                  onChange={(_, newValue) => {
+                    if (typeof newValue === 'string') {
+                      setTicker(newValue);
+                    } else if (newValue) {
+                      setTicker(newValue.symbol);
+                    } else {
+                      setTicker(''); // Clear ticker if input is cleared
+                    }
+                  }}
+                  loading={isSearching}
+                  renderInput={(params) => (
+                    <TextField
+                      {...params}
+                      label="Search Stock by Name or Ticker"
+                      required
+                      fullWidth
+                      error={!!error}
+                      helperText={error}
+                      InputProps={{
+                        ...params.InputProps,
+                        endAdornment: (
+                          <>
+                            {isSearching ? <MuiCircularProgress color="inherit" size={20} /> : null}
+                            {params.InputProps.endAdornment}
+                          </>
+                        ),
+                      }}
+                      sx={{
+                        '& .MuiOutlinedInput-root': {
+                          '&:hover fieldset': {
+                            borderColor: '#2196F3',
+                          },
+                        },
+                      }}
+                    />
+                  )}
+                  renderOption={(props, option) => (
+                    <li {...props}>
+                      <Box sx={{ display: 'flex', flexDirection: 'column' }}>
+                        <Typography variant="body1">
+                          {option.symbol} - {option.name}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          {option.exchange}
+                        </Typography>
+                      </Box>
+                    </li>
+                  )}
+                  noOptionsText={stockInput.length < 2 ? "Type at least 2 characters to search" : (isSearching ? "Searching..." : "No stocks found")}
+                  loadingText="Searching stocks..."
                 />
 
                 <TextField
