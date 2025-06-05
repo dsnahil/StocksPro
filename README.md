@@ -10,6 +10,7 @@ A comprehensive web application that helps users make informed decisions about b
 - Position-based recommendations
 - Historical price pattern analysis
 - Social sentiment integration
+- Offline search suggestions using a local list of S&P 500 companies
 
 ## Setup Instructions
 
@@ -26,10 +27,10 @@ source venv/bin/activate  # On Windows: venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
-3. Create a `.env` file in the backend directory with your API keys:
+3. Create a `.env` file in the backend directory with your API key:
 ```
 NEWS_API_KEY=your_news_api_key
-ALPHA_VANTAGE_API_KEY=your_alpha_vantage_key
+FMP_API_KEY=your_fmp_key
 ```
 
 4. Start the backend server:
@@ -51,13 +52,16 @@ npm install
 npm start
 ```
 
+The app provides autocomplete search suggestions after typing two or more
+letters in the stock search field. Suggestions are served from a local CSV file
+containing S&P 500 company names and symbols.
+
 ## Environment Variables
 
-The following environment variables are required:
+The following environment variable is required:
 
 - `NEWS_API_KEY`: API key for NewsAPI
-- `ALPHA_VANTAGE_API_KEY`: API key for Alpha Vantage
-- `FMP_API_KEY`: API key for FinancialModelingPrep (used for stock search)
+- `FMP_API_KEY`: API key for Financial Modeling Prep
 
 ## Contributing
 

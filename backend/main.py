@@ -2,13 +2,11 @@ from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import Optional, List
-# import yfinance as yf # We will not directly use yfinance for search anymore
 import pandas as pd
 import numpy as np
 from datetime import datetime, timedelta
-import requests # Import requests library
-from newsapi import NewsApiClient
 import os
+from newsapi import NewsApiClient
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -26,16 +24,6 @@ app.add_middleware(
 
 # Initialize NewsAPI client
 newsapi = NewsApiClient(api_key=os.getenv('NEWS_API_KEY'))
-
-# Get FMP API key from environment variables
-FMP_API_KEY = os.getenv('FMP_API_KEY')
-if not FMP_API_KEY:
-    # Instead of failing at startup, log a warning so the API can still run
-    # without the optional stock search functionality.
-    print(
-        "Warning: FMP_API_KEY environment variable is not set. "
-        "The /search_stocks endpoint will be disabled."
-    )
 
 class StockAnalysisRequest(BaseModel):
     ticker: str
@@ -95,33 +83,25 @@ async def search_stocks(query: str = Query(..., min_length=2)):
             detail="Stock search is unavailable because FMP_API_KEY is not configured."
         )
     try:
-        # Use FinancialModelingPrep's search API
-        fmp_search_url = (
-            "https://financialmodelingprep.com/api/v3/search"
-            f"?query={query}&limit=10&apikey={FMP_API_KEY}"
-        )
-        response = requests.get(fmp_search_url)
-        response.raise_for_status()
-        
-        search_results = response.json()
-        
-        suggestions = []
-        if search_results:
-            for result in search_results:
-                suggestions.append(StockSuggestion(
-                    symbol=result.get('symbol', 'N/A'),
-                    name=result.get('name', 'N/A'),
-                    exchange=result.get('exchangeShortName', 'N/A')
-                ))
+        query_lower = query.lower()
+        filtered = STOCKS_DF[
+            STOCKS_DF["Symbol"].str.lower().str.startswith(query_lower)
+            | STOCKS_DF["Security"].str.lower().str.startswith(query_lower)
+        ].head(10)
+
+        suggestions = [
+            StockSuggestion(
+                symbol=row["Symbol"],
+                name=row["Security"],
+                exchange="S&P 500",
+            )
+            for _, row in filtered.iterrows()
+        ]
 
         return suggestions
-
-    except requests.exceptions.RequestException as e:
-        print(f"Error calling FMP search API: {e}")
-        raise HTTPException(status_code=500, detail=f"Error searching for stocks: Could not connect to stock data source.")
     except Exception as e:
-        print(f"Error processing FMP search response: {e}")
-        raise HTTPException(status_code=500, detail=f"Error searching for stocks: Could not process search results.")
+        print(f"Error searching local stock list: {e}")
+        raise HTTPException(status_code=500, detail="Error searching for stocks.")
 
 @app.post("/analyze", response_model=StockAnalysisResponse)
 async def analyze_stock(request: StockAnalysisRequest):
