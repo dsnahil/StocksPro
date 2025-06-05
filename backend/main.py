@@ -1,15 +1,18 @@
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from typing import Optional, List
+from typing import List
 import pandas as pd
-import numpy as np
 from datetime import datetime, timedelta
 import os
 from newsapi import NewsApiClient
 from dotenv import load_dotenv
 
 load_dotenv()
+
+FMP_API_KEY = os.getenv("FMP_API_KEY")
+SP500_CSV_PATH = os.path.join(os.path.dirname(__file__), "data", "sp500.csv")
+STOCKS_DF = pd.read_csv(SP500_CSV_PATH)
 
 app = FastAPI(title="StocksPro API")
 
@@ -77,11 +80,6 @@ def get_news_sentiment(ticker):
 
 @app.get("/search_stocks", response_model=List[StockSuggestion])
 async def search_stocks(query: str = Query(..., min_length=2)):
-    if not FMP_API_KEY:
-        raise HTTPException(
-            status_code=503,
-            detail="Stock search is unavailable because FMP_API_KEY is not configured."
-        )
     try:
         query_lower = query.lower()
         filtered = STOCKS_DF[
