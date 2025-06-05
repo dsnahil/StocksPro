@@ -27,7 +27,7 @@ source venv/bin/activate  # On Windows: venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
-3. Create a `.env` file in the backend directory with your API keys:
+3. Create a `.env` file in the backend directory with your API key:
 ```
 NEWS_API_KEY=your_news_api_key
 FMP_API_KEY=your_fmp_key
@@ -58,7 +58,7 @@ containing S&P 500 company names and symbols.
 
 ## Environment Variables
 
-The following environment variables are required:
+The following environment variable is required:
 
 - `NEWS_API_KEY`: API key for NewsAPI
 - `FMP_API_KEY`: API key for Financial Modeling Prep
