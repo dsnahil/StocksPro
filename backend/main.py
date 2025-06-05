@@ -73,7 +73,10 @@ def get_news_sentiment(ticker):
 async def analyze_stock(request: StockAnalysisRequest):
     try:
         # Fetch stock data
-        stock = yf.Ticker(request.ticker)
+        ticker_symbol = request.ticker
+        if not ticker_symbol.endswith(".NS"):
+            ticker_symbol += ".NS"
+        stock = yf.Ticker(ticker_symbol)
         hist = stock.history(period="1y")
         
         if hist.empty:
