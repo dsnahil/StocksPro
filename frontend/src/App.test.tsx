@@ -1,9 +1,19 @@
 import React from 'react';
 import { render, screen } from '@testing-library/react';
+
+// Mock axios to avoid issues with ESM imports during testing
+jest.mock('axios', () => ({
+  __esModule: true,
+  default: {
+    get: jest.fn(),
+    post: jest.fn(),
+  },
+}));
+
 import App from './App';
 
-test('renders learn react link', () => {
+test('renders StocksPro Analysis heading', () => {
   render(<App />);
-  const linkElement = screen.getByText(/learn react/i);
-  expect(linkElement).toBeInTheDocument();
+  const headingElement = screen.getByText(/StocksPro Analysis/i);
+  expect(headingElement).toBeInTheDocument();
 });
