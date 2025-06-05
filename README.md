@@ -10,6 +10,7 @@ A comprehensive web application that helps users make informed decisions about b
 - Position-based recommendations
 - Historical price pattern analysis
 - Social sentiment integration
+- Offline search suggestions using a local list of S&P 500 companies
 
 ## Setup Instructions
 
@@ -50,6 +51,10 @@ npm install
 ```bash
 npm start
 ```
+
+The app provides autocomplete search suggestions after typing two or more
+letters in the stock search field. Suggestions are served from a local CSV file
+containing S&P 500 company names and symbols.
 
 ## Environment Variables
 
