@@ -25,11 +25,6 @@ app.add_middleware(
 # Initialize NewsAPI client
 newsapi = NewsApiClient(api_key=os.getenv('NEWS_API_KEY'))
 
-# Load static stock list for search suggestions
-STOCKS_DF = pd.read_csv(
-    os.path.join(os.path.dirname(__file__), "data", "sp500.csv")
-)
-
 class StockAnalysisRequest(BaseModel):
     ticker: str
     shares: int
@@ -82,6 +77,11 @@ def get_news_sentiment(ticker):
 
 @app.get("/search_stocks", response_model=List[StockSuggestion])
 async def search_stocks(query: str = Query(..., min_length=2)):
+    if not FMP_API_KEY:
+        raise HTTPException(
+            status_code=503,
+            detail="Stock search is unavailable because FMP_API_KEY is not configured."
+        )
     try:
         query_lower = query.lower()
         filtered = STOCKS_DF[
