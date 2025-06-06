@@ -104,13 +104,19 @@ async def search_stocks(query: str = Query(..., min_length=2)):
 @app.post("/analyze", response_model=StockAnalysisResponse)
 async def analyze_stock(request: StockAnalysisRequest):
     try:
-        # Fetch stock data using yfinance (this part remains the same)
+        # Fetch stock data using yfinance
         ticker_symbol = request.ticker
-        if not ticker_symbol.endswith(".NS"):
-            ticker_symbol += ".NS"
         stock = yf.Ticker(ticker_symbol)
         hist = stock.history(period="1y")
-        
+
+        # If no data found, try with '.NS' for NSE symbols
+        if hist.empty:
+            alt_symbol = f"{ticker_symbol}.NS"
+            stock = yf.Ticker(alt_symbol)
+            hist = stock.history(period="1y")
+            if not hist.empty:
+                ticker_symbol = alt_symbol
+
         if hist.empty:
             raise HTTPException(status_code=404, detail="Stock data not found")
         
