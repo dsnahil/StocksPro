@@ -107,18 +107,33 @@ async def analyze_stock(request: StockAnalysisRequest):
         # Fetch stock data using yfinance
         ticker_symbol = request.ticker
         stock = yf.Ticker(ticker_symbol)
-        hist = stock.history(period="1y")
+        try:
+            hist = stock.history(period="max")
+        except Exception as e:
+            raise HTTPException(
+                status_code=502,
+                detail=f"Failed to fetch data for {ticker_symbol}: {e}"
+            )
 
         # If no data found, try with '.NS' for NSE symbols
         if hist.empty:
             alt_symbol = f"{ticker_symbol}.NS"
             stock = yf.Ticker(alt_symbol)
-            hist = stock.history(period="1y")
+            try:
+                hist = stock.history(period="max")
+            except Exception as e:
+                raise HTTPException(
+                    status_code=502,
+                    detail=f"Failed to fetch data for {alt_symbol}: {e}"
+                )
             if not hist.empty:
                 ticker_symbol = alt_symbol
 
         if hist.empty:
-            raise HTTPException(status_code=404, detail="Stock data not found")
+            raise HTTPException(
+                status_code=503,
+                detail="Stock data unavailable. Check network connectivity or ticker symbol."
+            )
         
         # Calculate technical indicators
         hist = calculate_technical_indicators(hist)
