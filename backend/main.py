@@ -108,7 +108,7 @@ async def analyze_stock(request: StockAnalysisRequest):
         ticker_symbol = request.ticker
         stock = yf.Ticker(ticker_symbol)
         try:
-            hist = stock.history(period="1y")
+            hist = stock.history(period="max")
         except Exception as e:
             raise HTTPException(
                 status_code=502,
@@ -120,7 +120,7 @@ async def analyze_stock(request: StockAnalysisRequest):
             alt_symbol = f"{ticker_symbol}.NS"
             stock = yf.Ticker(alt_symbol)
             try:
-                hist = stock.history(period="1y")
+                hist = stock.history(period="max")
             except Exception as e:
                 raise HTTPException(
                     status_code=502,
