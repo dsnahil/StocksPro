@@ -48,45 +48,41 @@ function App() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
+  // Stock search
   useEffect(() => {
     let isMounted = true;
     const searchStocks = async () => {
-      if (stockInput.length >= 2) {
-        setIsSearching(true);
-        setError(''); // Clear previous errors on new search
-        try {
-          // Using the new backend endpoint for stock search
-          const response = await axios.get(`http://localhost:8000/search_stocks?query=${stockInput}`);
-          
-          if (isMounted && response.data) {
-            // The backend should return a list of StockSuggestion objects
-            setStockSuggestions(response.data);
-          }
-        } catch (err: any) {
-          console.error('Error fetching stock suggestions from backend:', err);
-          if (isMounted) {
-            setStockSuggestions([]);
-            // Display a more user-friendly error message
-            setError(err.response?.data?.detail || 'Error searching for stocks. Please try again.');
-          }
-        } finally {
-          if (isMounted) {
-            setIsSearching(false);
-          }
-        }
-      } else {
+      if (stockInput.length < 2) {
         setStockSuggestions([]);
-        setError(''); // Clear error when input is less than 2 chars
+        setError('');
+        return;
+      }
+      setIsSearching(true);
+      setError('');
+      try {
+        const res = await axios.get<StockSuggestion[]>(
+          `http://localhost:8000/search_stocks?query=${stockInput}`
+        );
+        if (isMounted) setStockSuggestions(res.data);
+      } catch (e: any) {
+        console.error(e);
+        if (isMounted) {
+          setStockSuggestions([]);
+          setError(e.response?.data?.detail || 'Error searching stocks');
+        }
+      } finally {
+        if (isMounted) setIsSearching(false);
       }
     };
 
-    const debounceTimer = setTimeout(searchStocks, 300);
+    const timer = setTimeout(searchStocks, 300);
     return () => {
-      clearTimeout(debounceTimer);
+      clearTimeout(timer);
       isMounted = false;
     };
   }, [stockInput]);
 
+  // Form submit
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
@@ -94,137 +90,148 @@ function App() {
     setAnalysis(null);
 
     try {
-      const response = await axios.post('http://localhost:8000/analyze', {
-        ticker: ticker.toUpperCase(),
-        shares: parseInt(shares),
-        average_price: parseFloat(averagePrice),
-        position_type: positionType,
-        position_amount: parseFloat(positionAmount),
-      });
-
-      setAnalysis(response.data);
-    } catch (err) {
-      setError('Error analyzing stock. Please try again.');
+      const res = await axios.post<AnalysisResponse>(
+        'http://localhost:8000/analyze',
+        {
+          ticker: ticker.toUpperCase(),
+          shares: parseInt(shares),
+          average_price: parseFloat(averagePrice),
+          position_type: positionType,
+          position_amount: parseFloat(positionAmount),
+        }
+      );
+      setAnalysis(res.data);
+    } catch (err: any) {
       console.error(err);
+      // show exact API detail if present
+      const msg = err.response?.data?.detail || 'Error analyzing stock. Please try again.';
+      setError(msg);
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <Box
-      sx={{
-        minHeight: '100vh',
-        backgroundImage: 'url("https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?q=80&w=2070")',
-        backgroundSize: 'cover',
-        backgroundPosition: 'center',
-        backgroundAttachment: 'fixed',
-        position: 'relative',
-        '&::before': {
-          content: '""',
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          backgroundColor: 'rgba(255, 255, 255, 0.9)',
-          backdropFilter: 'blur(5px)',
-        }
-      }}
-    >
+    <Box sx={{
+      minHeight: '100vh',
+      backgroundImage: 'url("https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?q=80&w=2070")',
+      backgroundSize: 'cover',
+      backgroundPosition: 'center',
+      backgroundAttachment: 'fixed',
+      position: 'relative',
+      '&::before': {
+        content: '""',
+        position: 'absolute',
+        inset: 0,
+        backgroundColor: 'rgba(255,255,255,0.9)',
+        backdropFilter: 'blur(5px)',
+      }
+    }}>
       <Container maxWidth="md" sx={{ py: 4, position: 'relative' }}>
-        <Fade in={true} timeout={1000}>
-          <Typography variant="h3" component="h1" gutterBottom align="center" sx={{ 
-            fontWeight: 'bold',
-            background: 'linear-gradient(45deg, #2196F3 30%, #21CBF3 90%)',
-            WebkitBackgroundClip: 'text',
-            WebkitTextFillColor: 'transparent',
-            mb: 4,
-            textShadow: '0 2px 4px rgba(0,0,0,0.1)'
-          }}>
+        <Fade in timeout={1000}>
+          <Typography
+            variant="h3"
+            component="h1"
+            gutterBottom
+            align="center"
+            sx={{
+              fontWeight: 'bold',
+              background: 'linear-gradient(45deg, #2196F3 30%, #21CBF3 90%)',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+              mb: 4,
+              textShadow: '0 2px 4px rgba(0,0,0,0.1)',
+            }}
+          >
             StocksPro Analysis
           </Typography>
         </Fade>
 
-        <Grow in={true} timeout={1000}>
-          <Paper elevation={3} sx={{ 
-            p: 4, 
+        <Grow in timeout={1000}>
+          <Paper elevation={3} sx={{
+            p: 4,
             mb: 4,
             borderRadius: 2,
-            transition: 'transform 0.2s, box-shadow 0.2s',
-            backgroundColor: 'rgba(255, 255, 255, 0.95)',
+            backgroundColor: 'rgba(255,255,255,0.95)',
             backdropFilter: 'blur(10px)',
+            transition: 'transform 0.2s, box-shadow 0.2s',
             '&:hover': {
               transform: 'translateY(-4px)',
-              boxShadow: '0 8px 16px rgba(0,0,0,0.1)'
-            }
+              boxShadow: '0 8px 16px rgba(0,0,0,0.1)',
+            },
           }}>
             <form onSubmit={handleSubmit}>
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                <Autocomplete
-                  freeSolo
-                  options={stockSuggestions}
-                  getOptionLabel={(option) => 
-                    typeof option === 'string' 
-                      ? option 
-                      : `${option.symbol} - ${option.name} (${option.exchange})`
-                  }
-                  inputValue={stockInput}
-                  onInputChange={(_, newValue) => {
-                    setStockInput(newValue);
-                    setError(''); // Clear any previous errors
-                  }}
-                  onChange={(_, newValue) => {
-                    if (typeof newValue === 'string') {
-                      setTicker(newValue);
-                    } else if (newValue) {
-                      setTicker(newValue.symbol);
-                    } else {
-                      setTicker(''); // Clear ticker if input is cleared
-                    }
-                  }}
-                  loading={isSearching}
-                  renderInput={(params) => (
-                    <TextField
-                      {...params}
-                      label="Search Stock by Name or Ticker"
-                      required
-                      fullWidth
-                      error={!!error}
-                      helperText={error}
-                      InputProps={{
-                        ...params.InputProps,
-                        endAdornment: (
-                          <>
-                            {isSearching ? <MuiCircularProgress color="inherit" size={20} /> : null}
-                            {params.InputProps.endAdornment}
-                          </>
-                        ),
-                      }}
-                      sx={{
-                        '& .MuiOutlinedInput-root': {
-                          '&:hover fieldset': {
-                            borderColor: '#2196F3',
-                          },
-                        },
-                      }}
-                    />
-                  )}
-                  renderOption={(props, option) => (
-                    <li {...props}>
-                      <Box sx={{ display: 'flex', flexDirection: 'column' }}>
-                        <Typography variant="body1">
-                          {option.symbol} - {option.name}
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary">
-                          {option.exchange}
-                        </Typography>
-                      </Box>
-                    </li>
-                  )}
-                  noOptionsText={stockInput.length < 2 ? "Type at least 2 characters to search" : (isSearching ? "Searching..." : "No stocks found")}
-                  loadingText="Searching stocks..."
-                />
+              <Autocomplete<StockSuggestion, false, false, true>
+  freeSolo
+  options={stockSuggestions}
+  getOptionLabel={(opt) =>
+    typeof opt === 'string'
+      ? opt
+      : `${opt.symbol} - ${opt.name} (${opt.exchange})`
+  }
+  filterOptions={(options) => options}
+  inputValue={stockInput}
+  onInputChange={(_, newVal) => {
+    setStockInput(newVal);
+    setError('');
+  }}
+  onChange={(_, newVal) => {
+    if (!newVal) return setTicker('');
+    setTicker(typeof newVal === 'string' ? newVal : newVal.symbol);
+  }}
+  loading={isSearching}
+  componentsProps={{
+    popper: {
+      sx: { zIndex: 2000 }
+    }
+  }}
+  renderInput={(params) => (
+    <TextField
+      {...params}
+      label="Search Stock by Name or Ticker"
+      required
+      fullWidth
+      error={!!error}
+      helperText={error}
+      InputProps={{
+        ...params.InputProps,
+        endAdornment: (
+          <>
+            {isSearching && <MuiCircularProgress size={20} />}
+            {params.InputProps.endAdornment}
+          </>
+        ),
+      }}
+      sx={{
+        '& .MuiOutlinedInput-root:hover fieldset': {
+          borderColor: '#2196F3',
+        },
+      }}
+    />
+  )}
+  renderOption={(props, option) => (
+    <li {...props} key={option.symbol}>
+      <Box>
+        <Typography variant="body1">
+          {option.symbol} – {option.name}
+        </Typography>
+        <Typography variant="caption" color="text.secondary">
+          {option.exchange}
+        </Typography>
+      </Box>
+    </li>
+  )}
+  noOptionsText={
+    stockInput.length < 2
+      ? 'Type at least 2 characters to search'
+      : isSearching
+      ? 'Searching...'
+      : 'No stocks found'
+  }
+  loadingText="Searching..."
+/>
+
 
                 <TextField
                   label="Number of Shares"
@@ -234,10 +241,8 @@ function App() {
                   required
                   fullWidth
                   sx={{
-                    '& .MuiOutlinedInput-root': {
-                      '&:hover fieldset': {
-                        borderColor: '#2196F3',
-                      },
+                    '& .MuiOutlinedInput-root:hover fieldset': {
+                      borderColor: '#2196F3',
                     },
                   }}
                 />
@@ -250,16 +255,14 @@ function App() {
                   required
                   fullWidth
                   sx={{
-                    '& .MuiOutlinedInput-root': {
-                      '&:hover fieldset': {
-                        borderColor: '#2196F3',
-                      },
+                    '& .MuiOutlinedInput-root:hover fieldset': {
+                      borderColor: '#2196F3',
                     },
                   }}
                 />
 
                 <FormControl component="fieldset">
-                  <FormLabel component="legend">Position Type</FormLabel>
+                  <FormLabel>Position Type</FormLabel>
                   <RadioGroup
                     value={positionType}
                     onChange={(e) => setPositionType(e.target.value)}
@@ -285,10 +288,8 @@ function App() {
                   required
                   fullWidth
                   sx={{
-                    '& .MuiOutlinedInput-root': {
-                      '&:hover fieldset': {
-                        borderColor: '#2196F3',
-                      },
+                    '& .MuiOutlinedInput-root:hover fieldset': {
+                      borderColor: '#2196F3',
                     },
                   }}
                 />
@@ -296,17 +297,14 @@ function App() {
                 <Button
                   type="submit"
                   variant="contained"
-                  color="primary"
                   size="large"
                   disabled={loading}
                   sx={{
                     mt: 2,
                     background: 'linear-gradient(45deg, #2196F3 30%, #21CBF3 90%)',
-                    boxShadow: '0 3px 5px 2px rgba(33, 203, 243, .3)',
+                    boxShadow: '0 3px 5px 2px rgba(33,203,243,.3)',
                     transition: 'transform 0.2s',
-                    '&:hover': {
-                      transform: 'scale(1.02)',
-                    },
+                    '&:hover': { transform: 'scale(1.02)' },
                   }}
                 >
                   {loading ? <CircularProgress size={24} /> : 'Analyze Stock'}
@@ -317,69 +315,55 @@ function App() {
         </Grow>
 
         {error && (
-          <Fade in={true}>
-            <Alert severity="error" sx={{ 
-              mb: 2,
-              backgroundColor: 'rgba(255, 255, 255, 0.95)',
-              backdropFilter: 'blur(10px)'
-            }}>
+          <Fade in>
+            <Alert severity="error" sx={{ mb: 2, backdropFilter: 'blur(10px)' }}>
               {error}
             </Alert>
           </Fade>
         )}
 
         {analysis && (
-          <Grow in={true} timeout={1000}>
-            <Paper elevation={3} sx={{ 
+          <Grow in timeout={1000}>
+            <Paper elevation={3} sx={{
               p: 4,
               borderRadius: 2,
-              transition: 'transform 0.2s, box-shadow 0.2s',
-              backgroundColor: 'rgba(255, 255, 255, 0.95)',
+              backgroundColor: 'rgba(255,255,255,0.95)',
               backdropFilter: 'blur(10px)',
+              transition: 'transform 0.2s, box-shadow 0.2s',
               '&:hover': {
                 transform: 'translateY(-4px)',
-                boxShadow: '0 8px 16px rgba(0,0,0,0.1)'
-              }
+                boxShadow: '0 8px 16px rgba(0,0,0,0.1)',
+              },
             }}>
               <Typography variant="h5" gutterBottom sx={{ color: '#2196F3' }}>
                 Analysis Results
               </Typography>
+              <Typography paragraph>{analysis.summary}</Typography>
 
-              <Typography variant="body1" paragraph>
-                {analysis.summary}
-              </Typography>
-
-              <Typography variant="h6" gutterBottom sx={{ color: '#2196F3' }}>
+              <Typography variant="h6" sx={{ color: '#2196F3' }}>
                 Key Drivers:
               </Typography>
               <ul>
-                {analysis.key_drivers.map((driver, index) => (
-                  <li key={index}>
-                    <Typography variant="body1">{driver}</Typography>
-                  </li>
+                {analysis.key_drivers.map((d, i) => (
+                  <li key={i}><Typography>{d}</Typography></li>
                 ))}
               </ul>
 
-              <Typography variant="h6" gutterBottom sx={{ color: '#2196F3' }}>
+              <Typography variant="h6" sx={{ color: '#2196F3' }}>
                 Recommendation:
               </Typography>
-              <Typography variant="body1" paragraph>
-                {analysis.recommendation}
-              </Typography>
+              <Typography paragraph>{analysis.recommendation}</Typography>
 
-              <Typography variant="h6" gutterBottom sx={{ color: '#2196F3' }}>
+              <Typography variant="h6" sx={{ color: '#2196F3' }}>
                 Rationale:
               </Typography>
-              <Typography variant="body1" paragraph>
-                {analysis.rationale}
-              </Typography>
+              <Typography paragraph>{analysis.rationale}</Typography>
 
               <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
                 {analysis.disclaimer}
               </Typography>
-
-              <Typography variant="caption" color="text.secondary" sx={{ mt: 1, display: 'block' }}>
-                Data current as of {analysis.data_timestamp}
+              <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1 }}>
+                Data as of {analysis.data_timestamp}
               </Typography>
             </Paper>
           </Grow>
