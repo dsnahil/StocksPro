@@ -4,12 +4,10 @@
 
 ## Features
 
-- **Real-time Stock Data** – fetches price history and technical indicators
-- **News Sentiment Analysis** – gauges market sentiment from latest news
-- **Technical Signals** – RSI, MACD and moving averages
-- **Historical Patterns** – analyzes full price history from IPO to present
-- **Social Sentiment** – integrates community sentiment
-- **Offline Symbol Lookup** – local CSV of S&P 500 companies enables autocomplete suggestions
+- **Real-time Stock Data** – fetches price history and computes basic technical indicators
+- **News Sentiment Analysis** – gauges market sentiment from recent articles
+- **Technical Signals** – RSI and moving averages
+- **Offline Symbol Lookup** – local CSV of S&P&nbsp;500 companies enables autocomplete suggestions
 
 ## Tech Stack
 
