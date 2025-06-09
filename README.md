@@ -59,6 +59,9 @@ The backend expects the following variables in `backend/.env`:
 | `NEWS_API_KEY` | API key for [NewsAPI](https://newsapi.org/) |
 | `FMP_API_KEY`  | API key for [Financial Modeling Prep](https://financialmodelingprep.com/) |
 
+## Netlify Build Setup
+Netlify detects your Python and Node.js versions from `runtime.txt` and `.nvmrc`. This project pins Python 3.11 and Node 18 to avoid compatibility issues during deployment.
+
 ## Contributing
 
 Issues and pull requests are welcome. Please open an issue to discuss your ideas before submitting major changes.
