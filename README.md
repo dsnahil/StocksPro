@@ -24,7 +24,8 @@ Clone the repository and set up both the backend and frontend.
 ```bash
 # create a virtual environment
 python -m venv venv
-source venv/bin/activate               # on Windows use venv\Scripts\activate
+source venv/bin/activate
+ .\venv\Scripts\activate                # on powershell
 
 # install dependencies
 pip install -r requirements.txt
