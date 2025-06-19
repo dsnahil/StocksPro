@@ -41,8 +41,6 @@ class StockAnalysisRequest(BaseModel):
     ticker: str
     shares: int
     average_price: float
-    position_type: str  # "profit" or "loss"
-    position_amount: float
 
 
 class StockAnalysisResponse(BaseModel):

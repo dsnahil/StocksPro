@@ -42,8 +42,6 @@ function App() {
   const [isSearching, setIsSearching] = useState(false);
   const [shares, setShares] = useState('');
   const [averagePrice, setAveragePrice] = useState('');
-  const [positionType, setPositionType] = useState('profit');
-  const [positionAmount, setPositionAmount] = useState('');
   const [analysis, setAnalysis] = useState<AnalysisResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -96,8 +94,6 @@ function App() {
           ticker: ticker.toUpperCase(),
           shares: parseInt(shares),
           average_price: parseFloat(averagePrice),
-          position_type: positionType,
-          position_amount: parseFloat(positionAmount),
         }
       );
       setAnalysis(res.data);
@@ -261,39 +257,6 @@ function App() {
                   }}
                 />
 
-                <FormControl component="fieldset">
-                  <FormLabel>Position Type</FormLabel>
-                  <RadioGroup
-                    value={positionType}
-                    onChange={(e) => setPositionType(e.target.value)}
-                  >
-                    <FormControlLabel
-                      value="profit"
-                      control={<Radio />}
-                      label="Profit"
-                    />
-                    <FormControlLabel
-                      value="loss"
-                      control={<Radio />}
-                      label="Loss"
-                    />
-                  </RadioGroup>
-                </FormControl>
-
-                <TextField
-                  label="Net Profit/Loss"
-                  type="number"
-                  value={positionAmount}
-                  onChange={(e) => setPositionAmount(e.target.value)}
-                  required
-                  fullWidth
-                  sx={{
-                    '& .MuiOutlinedInput-root:hover fieldset': {
-                      borderColor: '#2196F3',
-                    },
-                  }}
-                />
-
                 <Button
                   type="submit"
                   variant="contained"
@@ -338,32 +301,35 @@ function App() {
               <Typography variant="h5" gutterBottom sx={{ color: '#2196F3' }}>
                 Analysis Results
               </Typography>
-              <Typography paragraph>{analysis.summary}</Typography>
+              <Typography paragraph>{typeof analysis.summary === 'string' ? analysis.summary : JSON.stringify(analysis.summary)}</Typography>
 
               <Typography variant="h6" sx={{ color: '#2196F3' }}>
                 Key Drivers:
               </Typography>
               <ul>
-                {analysis.key_drivers.map((d, i) => (
-                  <li key={i}><Typography>{d}</Typography></li>
-                ))}
+                {Array.isArray(analysis.key_drivers)
+                  ? analysis.key_drivers.map((d, i) => (
+                      <li key={i}><Typography>{typeof d === 'string' ? d : JSON.stringify(d)}</Typography></li>
+                    ))
+                  : <li><Typography>{JSON.stringify(analysis.key_drivers)}</Typography></li>
+                }
               </ul>
 
               <Typography variant="h6" sx={{ color: '#2196F3' }}>
                 Recommendation:
               </Typography>
-              <Typography paragraph>{analysis.recommendation}</Typography>
+              <Typography paragraph>{typeof analysis.recommendation === 'string' ? analysis.recommendation : JSON.stringify(analysis.recommendation)}</Typography>
 
               <Typography variant="h6" sx={{ color: '#2196F3' }}>
                 Rationale:
               </Typography>
-              <Typography paragraph>{analysis.rationale}</Typography>
+              <Typography paragraph>{typeof analysis.rationale === 'string' ? analysis.rationale : JSON.stringify(analysis.rationale)}</Typography>
 
               <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
-                {analysis.disclaimer}
+                {typeof analysis.disclaimer === 'string' ? analysis.disclaimer : JSON.stringify(analysis.disclaimer)}
               </Typography>
               <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mt: 1 }}>
-                Data as of {analysis.data_timestamp}
+                Data as of {typeof analysis.data_timestamp === 'string' ? analysis.data_timestamp : JSON.stringify(analysis.data_timestamp)}
               </Typography>
             </Paper>
           </Grow>
